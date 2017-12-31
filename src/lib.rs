@@ -15,7 +15,7 @@
 //! You can easily add the ``{{#switch}}`` helper to a rust Handlebars object using
 //! the `Handlebars#register_helper` method:
 //!
-//! ```rust
+//! ```ignore
 //! use handlebars::Handlebars;
 //! use handlebars_switch::Handlebars;
 //!
@@ -29,7 +29,7 @@
 //! access level:
 //!
 //!
-//! ```rust
+//! ```
 //! extern crate handlebars_switch;
 //! extern crate handlebars;
 //! #[macro_use] extern crate serde_json;
