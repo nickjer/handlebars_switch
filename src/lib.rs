@@ -17,7 +17,7 @@
 //!
 //! ```ignore
 //! use handlebars::Handlebars;
-//! use handlebars_switch::Handlebars;
+//! use handlebars_switch::SwitchHelper;
 //!
 //! let mut handlebars = Handlebars::new();
 //! handlebars.register_helper("switch", Box::new(SwitchHelper));
