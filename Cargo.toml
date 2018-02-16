@@ -11,5 +11,5 @@ documentation = "https://docs.rs/handlebars_switch/"
 readme = "README.md"
 
 [dependencies]
-handlebars = "0.31"
+handlebars = "0.32"
 serde_json = "1.0"
