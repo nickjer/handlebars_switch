@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2021-05-02
+### Changed
+- Refactored code to support handlebars 3.5
+
 ## [0.3.0] - 2018-02-16
 ### Changed
 - Updated handlebars dependency to 0.32.
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added initial code.
 
-[Unreleased]: https://github.com/nickjer/handlebars_switch/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nickjer/handlebars_switch/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nickjer/handlebars_switch/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/nickjer/handlebars_switch/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nickjer/handlebars_switch/compare/v0.1.0...v0.2.0

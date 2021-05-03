@@ -1,6 +1,6 @@
 [package]
 name = "handlebars_switch"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Jeremy Nicklas <jeremywnicklas@gmail.com>"]
 edition = "2018"
 description = "Adds a `{{#switch}}` helper to handlebars-rust."
