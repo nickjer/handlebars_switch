@@ -49,12 +49,12 @@
 //!   ";
 //!
 //!   assert_eq!(
-//!       handlebars.template_render(tpl, &json!({"access": "admin"})).unwrap(),
+//!       handlebars.render_template(tpl, &json!({"access": "admin"})).unwrap(),
 //!       "Admin"
 //!   );
 //!
 //!   assert_eq!(
-//!       handlebars.template_render(tpl, &json!({"access": "nobody"})).unwrap(),
+//!       handlebars.render_template(tpl, &json!({"access": "nobody"})).unwrap(),
 //!       "User"
 //!   );
 //! }
