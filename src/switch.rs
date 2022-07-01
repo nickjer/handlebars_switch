@@ -53,7 +53,7 @@ impl HelperDef for DefaultHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        if let Some(ref mut block) = rc.block_mut() {
+        if let Some(block) = rc.block_mut() {
             let prev_found = block
                 .get_local_var("match")
                 .and_then(Value::as_bool)
@@ -61,7 +61,7 @@ impl HelperDef for DefaultHelper {
             if !prev_found {
                 // fallback to default if no match was found
                 match h.template() {
-                    Some(ref t) => t.render(r, ctx, rc, out),
+                    Some(t) => t.render(r, ctx, rc, out),
                     None => Ok(()),
                 }
             } else {
@@ -88,7 +88,7 @@ impl HelperDef for CaseHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        if let Some(ref mut block) = rc.block_mut() {
+        if let Some(block) = rc.block_mut() {
             let prev_found = block
                 .get_local_var("match")
                 .and_then(Value::as_bool)
@@ -99,9 +99,9 @@ impl HelperDef for CaseHelper {
                     .any(|x| *x.value() == self.expression_value)
             {
                 // found match
-                block.set_local_var("@match".to_string(), json!(true));
+                block.set_local_var("match", json!(true));
                 match h.template() {
-                    Some(ref t) => t.render(r, ctx, rc, out),
+                    Some(t) => t.render(r, ctx, rc, out),
                     None => Ok(()),
                 }
             } else {
@@ -135,7 +135,7 @@ impl HelperDef for SwitchHelper {
 
         // Keep track of whether a match occurs within the block
         let mut block_context = BlockContext::new();
-        block_context.set_local_var("@match".to_string(), json!(false));
+        block_context.set_local_var("match", json!(false));
         let mut local_rc = rc.clone();
         local_rc.push_block(block_context);
 
@@ -147,7 +147,7 @@ impl HelperDef for SwitchHelper {
 
         // Render the `{{#switch}}` block
         let result = match h.template() {
-            Some(ref t) => t.render(r, ctx, &mut local_rc, out),
+            Some(t) => t.render(r, ctx, &mut local_rc, out),
             None => Ok(()),
         };
 
@@ -253,5 +253,62 @@ mod tests {
         assert!(handlebars
             .render_template(tpl, &json!({"access": "admin"}))
             .is_err());
+    }
+
+    #[test]
+    fn test_only_case_exists_with_match() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#case \"admin\"}}Admin{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .unwrap(),
+            "Admin"
+        );
+    }
+
+    #[test]
+    fn test_only_case_exists_with_no_match() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#case \"admin\"}}Admin{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "unknown"}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_only_default_exists() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#default}}User{{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .unwrap(),
+            "User"
+        );
     }
 }

@@ -2,7 +2,7 @@
 name = "handlebars_switch"
 version = "0.4.0"
 authors = ["Jeremy Nicklas <jeremywnicklas@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Adds a `{{#switch}}` helper to handlebars-rust."
 license = "MIT"
 keywords = ["handlebars", "templating", "web"]
@@ -12,5 +12,5 @@ documentation = "https://docs.rs/handlebars_switch/"
 readme = "README.md"
 
 [dependencies]
-handlebars = "3.5"
+handlebars = "4.3"
 serde_json = "1.0"
