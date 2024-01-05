@@ -1,6 +1,6 @@
 use handlebars::{
     BlockContext, Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext,
-    RenderError, Renderable,
+    RenderErrorReason, Renderable,
 };
 
 use serde_json::Value;
@@ -47,7 +47,7 @@ pub struct DefaultHelper;
 impl HelperDef for DefaultHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -82,7 +82,7 @@ pub struct CaseHelper {
 impl HelperDef for CaseHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -120,7 +120,7 @@ pub struct SwitchHelper;
 impl HelperDef for SwitchHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -129,7 +129,7 @@ impl HelperDef for SwitchHelper {
         // Read in the switch variable or expression
         let param = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"switch\""))?;
+            .ok_or_else(|| RenderErrorReason::ParamNotFoundForIndex("switch", 0))?;
 
         let expression_value = param.value().clone();
 
