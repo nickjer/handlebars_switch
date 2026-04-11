@@ -312,4 +312,121 @@ mod tests {
             "User"
         );
     }
+
+    #[test]
+    fn test_switch_on_integer() {
+        let tpl = "\
+            {{#switch count}}\
+                {{#case 1}}one{{/case}}\
+                {{#case 2}}two{{/case}}\
+                {{#default}}other{{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"count": 1}))
+                .unwrap(),
+            "one"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"count": 2}))
+                .unwrap(),
+            "two"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"count": 99}))
+                .unwrap(),
+            "other"
+        );
+    }
+
+    #[test]
+    fn test_switch_on_boolean() {
+        let tpl = "\
+            {{#switch active}}\
+                {{#case true}}yes{{/case}}\
+                {{#case false}}no{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"active": true}))
+                .unwrap(),
+            "yes"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"active": false}))
+                .unwrap(),
+            "no"
+        );
+    }
+
+    #[test]
+    fn test_multiple_defaults_renders_both() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#default}}first{{/default}}\
+                {{#default}}second{{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "nobody"}))
+                .unwrap(),
+            "firstsecond"
+        );
+    }
+
+    #[test]
+    fn test_empty_switch_body() {
+        let tpl = "{{#switch access}}{{/switch}}";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_switch_on_null() {
+        let tpl = "\
+            {{#switch missing}}\
+                {{#case \"something\"}}found{{/case}}\
+                {{#default}}fallback{{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"missing": null}))
+                .unwrap(),
+            "fallback"
+        );
+    }
 }
