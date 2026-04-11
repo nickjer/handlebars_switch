@@ -1,27 +1,20 @@
----
-name: Continuous integration
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           components: rustfmt, clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+      - run: cargo build
+      - run: cargo test
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy -- -D warnings
