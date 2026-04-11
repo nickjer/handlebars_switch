@@ -3,7 +3,7 @@ use handlebars::{
     RenderErrorReason, Renderable,
 };
 
-use serde_json::Value;
+use serde_json::{json, Value};
 
 /// Switch Helper
 ///
@@ -161,6 +161,7 @@ impl HelperDef for SwitchHelper {
 mod tests {
     use super::SwitchHelper;
     use handlebars::Handlebars;
+    use serde_json::json;
 
     #[test]
     fn test_switch() {
