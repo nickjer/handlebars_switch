@@ -12,10 +12,10 @@
 //!
 //! ## Quick Start
 //!
-//! You can easily add the ``{{#switch}}`` helper to a rust Handlebars object using
-//! the `Handlebars#register_helper` method:
+//! You can easily add the `{{#switch}}` helper to a Handlebars instance using
+//! the `register_helper` method:
 //!
-//! ```ignore
+//! ```
 //! use handlebars::Handlebars;
 //! use handlebars_switch::SwitchHelper;
 //!
@@ -28,35 +28,31 @@
 //! Below is an example that renders a different page depending on the user's
 //! access level:
 //!
-//!
 //! ```
-//! extern crate handlebars_switch;
-//! extern crate handlebars;
-//! #[macro_use] extern crate serde_json;
-//!
 //! use handlebars::Handlebars;
 //! use handlebars_switch::SwitchHelper;
+//! use serde_json::json;
 //!
 //! fn main() {
-//!   let mut handlebars = Handlebars::new();
-//!   handlebars.register_helper("switch", Box::new(SwitchHelper));
+//!     let mut handlebars = Handlebars::new();
+//!     handlebars.register_helper("switch", Box::new(SwitchHelper));
 //!
-//!   let tpl = "\
-//!       {{#switch access}}\
-//!           {{#case \"admin\"}}Admin{{/case}}\
-//!           {{#default}}User{{/default}}\
-//!       {{/switch}}\
-//!   ";
+//!     let tpl = "\
+//!         {{#switch access}}\
+//!             {{#case \"admin\"}}Admin{{/case}}\
+//!             {{#default}}User{{/default}}\
+//!         {{/switch}}\
+//!     ";
 //!
-//!   assert_eq!(
-//!       handlebars.render_template(tpl, &json!({"access": "admin"})).unwrap(),
-//!       "Admin"
-//!   );
+//!     assert_eq!(
+//!         handlebars.render_template(tpl, &json!({"access": "admin"})).unwrap(),
+//!         "Admin"
+//!     );
 //!
-//!   assert_eq!(
-//!       handlebars.render_template(tpl, &json!({"access": "nobody"})).unwrap(),
-//!       "User"
-//!   );
+//!     assert_eq!(
+//!         handlebars.render_template(tpl, &json!({"access": "nobody"})).unwrap(),
+//!         "User"
+//!     );
 //! }
 //! ```
 
