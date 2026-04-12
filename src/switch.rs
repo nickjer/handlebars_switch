@@ -3,7 +3,7 @@ use handlebars::{
     RenderError, RenderErrorReason, Renderable,
 };
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 struct StringBuffer(String);
 
@@ -261,9 +261,11 @@ mod tests {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("switch", Box::new(SwitchHelper));
 
-        assert!(handlebars
-            .render_template(tpl, &json!({"access": "admin"}))
-            .is_err());
+        assert!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .is_err()
+        );
     }
 
     #[test]
@@ -279,9 +281,11 @@ mod tests {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("switch", Box::new(SwitchHelper));
 
-        assert!(handlebars
-            .render_template(tpl, &json!({"access": "admin"}))
-            .is_err());
+        assert!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .is_err()
+        );
     }
 
     #[test]
@@ -415,9 +419,11 @@ mod tests {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("switch", Box::new(SwitchHelper));
 
-        assert!(handlebars
-            .render_template(tpl, &json!({"access": "nobody"}))
-            .is_err());
+        assert!(
+            handlebars
+                .render_template(tpl, &json!({"access": "nobody"}))
+                .is_err()
+        );
     }
 
     #[test]
