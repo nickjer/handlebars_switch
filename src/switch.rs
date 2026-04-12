@@ -26,13 +26,13 @@ impl HelperDef for DefaultHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         _out: &mut dyn Output,
     ) -> HelperResult {
-        if let Some(block) = rc.block_mut() {
-            if block.get_local_var("default_output").is_some() {
-                return Err(RenderErrorReason::Other(
-                    "Multiple {{#default}} blocks in a single {{#switch}}".to_string(),
-                )
-                .into());
-            }
+        if let Some(block) = rc.block_mut()
+            && block.get_local_var("default_output").is_some()
+        {
+            return Err(RenderErrorReason::Other(
+                "Multiple {{#default}} blocks in a single {{#switch}}".to_string(),
+            )
+            .into());
         }
 
         let mut buf = StringBuffer(String::new());
