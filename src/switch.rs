@@ -1,45 +1,18 @@
 use handlebars::{
     BlockContext, Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext,
-    RenderErrorReason, Renderable,
+    RenderError, RenderErrorReason, Renderable,
 };
 
 use serde_json::{json, Value};
 
-/// Switch Helper
-///
-/// Provides the `{{#switch}}` helper to a Handlebars template.
-///
-/// # Examples
-///
-/// ```
-/// # extern crate handlebars_switch;
-/// # extern crate handlebars;
-/// # #[macro_use] extern crate serde_json;
-/// # fn main() {
-/// use handlebars::Handlebars;
-/// use handlebars_switch::SwitchHelper;
-///
-/// let mut handlebars = Handlebars::new();
-/// handlebars.register_helper("switch", Box::new(SwitchHelper));
-///
-/// let tpl = "\
-///     {{#switch access}}\
-///         {{#case \"admin\"}}Admin{{/case}}\
-///         {{#default}}User{{/default}}\
-///     {{/switch}}\
-/// ";
-///
-/// assert_eq!(
-///     handlebars.render_template(tpl, &json!({"access": "admin"})).unwrap(),
-///     "Admin"
-/// );
-///
-/// assert_eq!(
-///     handlebars.render_template(tpl, &json!({"access": "nobody"})).unwrap(),
-///     "User"
-/// );
-/// # }
-///
+struct StringBuffer(String);
+
+impl Output for StringBuffer {
+    fn write(&mut self, seg: &str) -> Result<(), std::io::Error> {
+        self.0.push_str(seg);
+        Ok(())
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct DefaultHelper;
@@ -51,26 +24,27 @@ impl HelperDef for DefaultHelper {
         r: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
+        _out: &mut dyn Output,
     ) -> HelperResult {
         if let Some(block) = rc.block_mut() {
-            let prev_found = block
-                .get_local_var("match")
-                .and_then(Value::as_bool)
-                .unwrap_or_default();
-            if !prev_found {
-                // fallback to default if no match was found
-                match h.template() {
-                    Some(t) => t.render(r, ctx, rc, out),
-                    None => Ok(()),
-                }
-            } else {
-                // skip if found match already
-                Ok(())
+            if block.get_local_var("default_output").is_some() {
+                return Err(RenderErrorReason::Other(
+                    "Multiple {{#default}} blocks in a single {{#switch}}".to_string(),
+                )
+                .into());
             }
-        } else {
-            Ok(())
         }
+
+        let mut buf = StringBuffer(String::new());
+        if let Some(t) = h.template() {
+            t.render(r, ctx, rc, &mut buf)?;
+        }
+
+        if let Some(block) = rc.block_mut() {
+            block.set_local_var("default_output", json!(buf.0));
+        }
+
+        Ok(())
     }
 }
 
@@ -114,6 +88,37 @@ impl HelperDef for CaseHelper {
     }
 }
 
+/// Switch Helper
+///
+/// Provides the `{{#switch}}` helper to a Handlebars template.
+///
+/// # Examples
+///
+/// ```
+/// use handlebars::Handlebars;
+/// use handlebars_switch::SwitchHelper;
+/// use serde_json::json;
+///
+/// let mut handlebars = Handlebars::new();
+/// handlebars.register_helper("switch", Box::new(SwitchHelper));
+///
+/// let tpl = "\
+///     {{#switch access}}\
+///         {{#case \"admin\"}}Admin{{/case}}\
+///         {{#default}}User{{/default}}\
+///     {{/switch}}\
+/// ";
+///
+/// assert_eq!(
+///     handlebars.render_template(tpl, &json!({"access": "admin"})).unwrap(),
+///     "Admin"
+/// );
+///
+/// assert_eq!(
+///     handlebars.render_template(tpl, &json!({"access": "nobody"})).unwrap(),
+///     "User"
+/// );
+/// ```
 #[derive(Clone, Copy)]
 pub struct SwitchHelper;
 
@@ -150,6 +155,29 @@ impl HelperDef for SwitchHelper {
             Some(t) => t.render(r, ctx, &mut local_rc, out),
             None => Ok(()),
         };
+
+        // Emit buffered default output if no case matched
+        let result = result.and_then(|()| {
+            let matched = local_rc
+                .block()
+                .and_then(|b| b.get_local_var("match"))
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+
+            if !matched {
+                if let Some(output) = local_rc
+                    .block()
+                    .and_then(|b| b.get_local_var("default_output"))
+                    .and_then(Value::as_str)
+                {
+                    out.write(output).map_err(RenderError::from)
+                } else {
+                    Ok(())
+                }
+            } else {
+                Ok(())
+            }
+        });
 
         local_rc.pop_block();
 
@@ -376,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_defaults_renders_both() {
+    fn test_multiple_defaults_is_error() {
         let tpl = "\
             {{#switch access}}\
                 {{#default}}first{{/default}}\
@@ -387,11 +415,48 @@ mod tests {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("switch", Box::new(SwitchHelper));
 
+        assert!(handlebars
+            .render_template(tpl, &json!({"access": "nobody"}))
+            .is_err());
+    }
+
+    #[test]
+    fn test_default_before_case_with_match() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#default}}User{{/default}}\
+                {{#case \"admin\"}}Admin{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"access": "admin"}))
+                .unwrap(),
+            "Admin"
+        );
+    }
+
+    #[test]
+    fn test_default_before_case_without_match() {
+        let tpl = "\
+            {{#switch access}}\
+                {{#default}}User{{/default}}\
+                {{#case \"admin\"}}Admin{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
         assert_eq!(
             handlebars
                 .render_template(tpl, &json!({"access": "nobody"}))
                 .unwrap(),
-            "firstsecond"
+            "User"
         );
     }
 
@@ -427,6 +492,107 @@ mod tests {
                 .render_template(tpl, &json!({"missing": null}))
                 .unwrap(),
             "fallback"
+        );
+    }
+
+    #[test]
+    fn test_nested_switch_in_default() {
+        let tpl = "\
+            {{#switch outer}}\
+                {{#case \"a\"}}A{{/case}}\
+                {{#default}}\
+                    {{#switch inner}}\
+                        {{#case \"x\"}}X{{/case}}\
+                        {{#default}}fallback{{/default}}\
+                    {{/switch}}\
+                {{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "a", "inner": "x"}))
+                .unwrap(),
+            "A"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "b", "inner": "x"}))
+                .unwrap(),
+            "X"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "b", "inner": "y"}))
+                .unwrap(),
+            "fallback"
+        );
+    }
+
+    #[test]
+    fn test_nested_defaults_are_independent() {
+        let tpl = "\
+            {{#switch outer}}\
+                {{#default}}\
+                    {{#switch inner}}\
+                        {{#default}}inner-default{{/default}}\
+                    {{/switch}}\
+                {{/default}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "x", "inner": "y"}))
+                .unwrap(),
+            "inner-default"
+        );
+    }
+
+    #[test]
+    fn test_nested_default_before_case() {
+        let tpl = "\
+            {{#switch outer}}\
+                {{#default}}\
+                    {{#switch inner}}\
+                        {{#default}}inner-default{{/default}}\
+                        {{#case \"x\"}}X{{/case}}\
+                    {{/switch}}\
+                {{/default}}\
+                {{#case \"a\"}}A{{/case}}\
+            {{/switch}}\
+        ";
+
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("switch", Box::new(SwitchHelper));
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "a", "inner": "x"}))
+                .unwrap(),
+            "A"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "b", "inner": "x"}))
+                .unwrap(),
+            "X"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(tpl, &json!({"outer": "b", "inner": "y"}))
+                .unwrap(),
+            "inner-default"
         );
     }
 }
